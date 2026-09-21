@@ -1,0 +1,128 @@
+# mcp-server
+
+用 [uv](https://docs.astral.sh/uv/) 管理的 FastMCP 服务集合。每个服务一个目录，用 FastMCP `namespace` 避免工具重名。
+
+镜像由 GitHub Actions 构建并推送到 GHCR：
+
+`ghcr.io/hakuzero4/mcp-server`
+
+| 目录 | Namespace | 说明 |
+| --- | --- | --- |
+| [`nginxproxy/`](nginxproxy/) | `nginxproxy` | [Nginx Proxy Manager](https://nginxproxymanager.com) API |
+
+## 添加一个新的 MCP 服务
+
+1. 在仓库根目录创建包（会自动加入 uv workspace）：
+
+   ```bash
+   uv init --package my-service
+   ```
+
+2. 实现 `my-service/src/my-service/server.py`，导出 `create_server()` 或 `mcp`，并用目录名做 namespace：
+
+   ```python
+   from fastmcp import FastMCP
+   from fastmcp.server.transforms import Namespace
+
+   def create_server(*, namespaced: bool = True) -> FastMCP:
+       mcp = FastMCP("my-service")
+       # 注册 tools / resources / prompts
+       if namespaced:
+           mcp.add_transform(Namespace("my-service"))
+       return mcp
+
+   mcp = create_server()
+   ```
+
+3. 安装依赖并锁定：
+
+   ```bash
+   uv add --package my-service fastmcp
+   uv lock
+   uv run --package my-service pytest
+   ```
+
+4. 提交推送。`run.py` 会扫描带 `src/<name>/server.py` 的目录，Dockerfile 会把新包打进同一张镜像，无需改 Dockerfile。
+
+5. 启动时指定服务名：
+
+   ```bash
+   docker run --rm -p 8000:8000 -e MCP_SERVER=my-service ghcr.io/hakuzero4/mcp-server
+   ```
+
+约定：
+
+- 目录名 = 包名 = namespace = `MCP_SERVER`
+- 密钥只走环境变量或 `.env`（已 gitignore），不要写进代码或镜像
+- 每个服务自己的 README 只写该服务的环境变量，示例用占位符
+
+## 本地开发
+
+```bash
+uv sync --all-packages
+uv run --package nginxproxy pytest nginxproxy/tests
+uv run python run.py --list
+uv run python run.py nginxproxy
+```
+
+`run.py` 默认 HTTP：`http://127.0.0.1:8000/mcp`，健康检查 `GET /health`。
+
+stdio：
+
+```bash
+MCP_TRANSPORT=stdio uv run python run.py nginxproxy
+```
+
+## Docker
+
+```bash
+docker build -t mcp-server .
+docker run --rm -p 8000:8000 \
+  -e MCP_SERVER=nginxproxy \
+  -e NPM_URL=http://127.0.0.1:81 \
+  -e NPM_EMAIL= \
+  -e NPM_PASSWORD= \
+  mcp-server
+```
+
+或使用 Compose（先复制 `.env.example` 为 `.env` 并填入本地配置）：
+
+```bash
+docker compose up --build
+```
+
+MCP 客户端连接容器时，endpoint 为 `http://<host>:8000/mcp`。
+
+stdio 模式：
+
+```bash
+docker run --rm -i \
+  -e MCP_TRANSPORT=stdio \
+  -e MCP_SERVER=nginxproxy \
+  -e NPM_URL=http://127.0.0.1:81 \
+  -e NPM_EMAIL= \
+  -e NPM_PASSWORD= \
+  ghcr.io/hakuzero4/mcp-server
+```
+
+## GitHub 镜像
+
+推送到 `main` / `master` 或打 `v*` tag 后，Actions 会：
+
+1. 跑测试
+2. 构建 `linux/amd64` 与 `linux/arm64`
+3. 推送到 `ghcr.io/hakuzero4/mcp-server`
+
+拉取：
+
+```bash
+docker pull ghcr.io/hakuzero4/mcp-server:latest
+```
+
+私有包需要先登录：
+
+```bash
+echo $GITHUB_TOKEN | docker login ghcr.io -u USERNAME --password-stdin
+```
+
+仓库 Settings → Actions → General 需允许 workflow 写入 packages。首次推送后可在 GitHub Packages 把镜像设为 public。

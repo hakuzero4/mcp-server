@@ -1,0 +1,13 @@
+services:
+  nginxproxy:
+    image: ghcr.io/hakuzero4/mcp-server:latest
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+      MCP_SERVER: nginxproxy
+      MCP_TRANSPORT: http
+      NPM_URL: ${NPM_URL:-http://127.0.0.1:81}
+      NPM_EMAIL: ${NPM_EMAIL}
+      NPM_PASSWORD: ${NPM_PASSWORD}
+      NPM_TOKEN: ${NPM_TOKEN}

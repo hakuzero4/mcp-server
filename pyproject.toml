@@ -1,0 +1,11 @@
+[project]
+name = "mcp-servers"
+version = "0.1.0"
+description = "Collection of FastMCP servers. Each server lives in its own directory and is distinguished by a FastMCP namespace."
+requires-python = ">=3.12"
+dependencies = []
+
+[tool.uv.workspace]
+members = [
+    "nginxproxy",
+]
