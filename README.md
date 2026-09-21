@@ -75,10 +75,13 @@ MCP_TRANSPORT=stdio uv run python run.py all
 
 ```bash
 cp .env.example .env
+docker compose pull
 docker compose up -d
 ```
 
 MCP 地址：`http://<host>:8000/mcp`。镜像来自 `ghcr.io/hakuzero4/mcp-server:latest`。
+
+拉镜像若出现 `download failed ... EOF`，等 Actions 编完后再 `docker compose pull`。本地已有镜像时 Compose 不会每次重拉。
 
 私有包先登录：
 
