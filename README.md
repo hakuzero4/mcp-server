@@ -71,23 +71,20 @@ MCP_TRANSPORT=stdio uv run python run.py all
 
 ## Docker
 
-```bash
-docker build -t mcp-server .
-docker run --rm -p 8000:8000 \
-  -e MCP_SERVER=all \
-  -e NPM_URL=http://127.0.0.1:81 \
-  -e NPM_EMAIL= \
-  -e NPM_PASSWORD= \
-  mcp-server
-```
-
-或使用 Compose（先复制 `.env.example` 为 `.env` 并填入本地配置）：
+复制 `.env.example` 为 `.env` 并填入配置，然后直接拉镜像启动（不在本地 build）：
 
 ```bash
-docker compose up --build
+cp .env.example .env
+docker compose up -d
 ```
 
-MCP 客户端连接容器时，endpoint 为 `http://<host>:8000/mcp`。
+MCP 地址：`http://<host>:8000/mcp`。镜像来自 `ghcr.io/hakuzero4/mcp-server:latest`。
+
+私有包先登录：
+
+```bash
+echo $GITHUB_TOKEN | docker login ghcr.io -u USERNAME --password-stdin
+```
 
 stdio 模式：
 

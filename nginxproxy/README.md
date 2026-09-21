@@ -18,15 +18,10 @@ uv sync --package nginxproxy
 uv run --package nginxproxy nginxproxy
 ```
 
-容器内：
+容器内（仓库根目录复制 `.env.example` 为 `.env` 后）：
 
 ```bash
-docker run --rm -p 8000:8000 \
-  -e MCP_SERVER=all \
-  -e NPM_URL=http://127.0.0.1:81 \
-  -e NPM_EMAIL= \
-  -e NPM_PASSWORD= \
-  ghcr.io/hakuzero4/mcp-server
+docker compose up -d
 ```
 
 ## Agent 用法
