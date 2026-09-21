@@ -5,7 +5,7 @@ services:
     ports:
       - "8000:8000"
     environment:
-      MCP_SERVER: nginxproxy
+      MCP_SERVER: all
       MCP_TRANSPORT: http
       NPM_URL: ${NPM_URL:-http://127.0.0.1:81}
       NPM_EMAIL: ${NPM_EMAIL}

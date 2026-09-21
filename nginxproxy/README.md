@@ -22,7 +22,7 @@ uv run --package nginxproxy nginxproxy
 
 ```bash
 docker run --rm -p 8000:8000 \
-  -e MCP_SERVER=nginxproxy \
+  -e MCP_SERVER=all \
   -e NPM_URL=http://127.0.0.1:81 \
   -e NPM_EMAIL= \
   -e NPM_PASSWORD= \

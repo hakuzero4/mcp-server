@@ -44,15 +44,11 @@
 
 4. 提交推送。`run.py` 会扫描带 `src/<name>/server.py` 的目录，Dockerfile 会把新包打进同一张镜像，无需改 Dockerfile。
 
-5. 启动时指定服务名：
-
-   ```bash
-   docker run --rm -p 8000:8000 -e MCP_SERVER=my-service ghcr.io/hakuzero4/mcp-server
-   ```
+5. 推送后同一张镜像即可用。一个进程默认挂载全部服务（FastMCP `mount` + namespace）。
 
 约定：
 
-- 目录名 = 包名 = namespace = `MCP_SERVER`
+- 目录名 = 包名 = namespace
 - 密钥只走环境变量或 `.env`（已 gitignore），不要写进代码或镜像
 - 每个服务自己的 README 只写该服务的环境变量，示例用占位符
 
@@ -62,7 +58,7 @@
 uv sync --all-packages
 uv run --package nginxproxy pytest nginxproxy/tests
 uv run python run.py --list
-uv run python run.py nginxproxy
+uv run python run.py all
 ```
 
 `run.py` 默认 HTTP：`http://127.0.0.1:8000/mcp`，健康检查 `GET /health`。
@@ -70,7 +66,7 @@ uv run python run.py nginxproxy
 stdio：
 
 ```bash
-MCP_TRANSPORT=stdio uv run python run.py nginxproxy
+MCP_TRANSPORT=stdio uv run python run.py all
 ```
 
 ## Docker
@@ -78,7 +74,7 @@ MCP_TRANSPORT=stdio uv run python run.py nginxproxy
 ```bash
 docker build -t mcp-server .
 docker run --rm -p 8000:8000 \
-  -e MCP_SERVER=nginxproxy \
+  -e MCP_SERVER=all \
   -e NPM_URL=http://127.0.0.1:81 \
   -e NPM_EMAIL= \
   -e NPM_PASSWORD= \
@@ -98,12 +94,28 @@ stdio 模式：
 ```bash
 docker run --rm -i \
   -e MCP_TRANSPORT=stdio \
-  -e MCP_SERVER=nginxproxy \
+  -e MCP_SERVER=all \
   -e NPM_URL=http://127.0.0.1:81 \
   -e NPM_EMAIL= \
   -e NPM_PASSWORD= \
   ghcr.io/hakuzero4/mcp-server
 ```
+
+## `MCP_SERVER`：一个入口，按名字路由
+
+FastMCP 可以在**同一个进程**里挂载多个子服务。客户端只连 `http://<host>:8000/mcp`，工具名用 namespace 区分：`nginxproxy_create_service`、`my-service_...`。
+
+| `MCP_SERVER` | 行为 |
+| --- | --- |
+| `all`（默认） | `mount` 仓库里每一个服务 |
+| `nginxproxy` | 只跑这一个 |
+| `nginxproxy,my-service` | 只挂载列出的几个 |
+
+```bash
+docker run --rm -p 8000:8000 -e MCP_SERVER=all ghcr.io/hakuzero4/mcp-server
+```
+
+这是工具级路由，不是 `/mcp/nginxproxy` 这种 URL 路径。一个 HTTP 端点，多个 namespace。
 
 ## GitHub 镜像
 
