@@ -11,6 +11,17 @@
 | [`nginxproxy/`](nginxproxy/) | `nginxproxy` | [Nginx Proxy Manager](https://nginxproxymanager.com) API |
 | [`quarksave/`](quarksave/) | `quarksave` | [quark-auto-save](https://github.com/Cp0204/quark-auto-save) 夸克转存 |
 
+工具名、参数和资源见各服务的 README：[nginxproxy](nginxproxy/README.md)、[quarksave](quarksave/README.md)。
+
+## 给 Agent
+
+客户端只连 `http://<host>:8000/mcp`。用户只说一句话时：
+
+| 用户说 | 调用 |
+| --- | --- |
+| 帮我创建一个服务 `10.0.0.10` 的 `8080` 端口，启用自定义证书，域名为 `app.home.com` | `nginxproxy_create_service` |
+| 把 `https://pan.quark.cn/s/xxxx` 转存到我的夸克 | `quarksave_save`，只传 `shareurl` |
+
 ## 添加一个新的 MCP 服务
 
 1. 在仓库根目录创建包（会自动加入 uv workspace）：
@@ -51,7 +62,7 @@
 
 - 目录名 = 包名 = namespace
 - 密钥只走环境变量或 `.env`（已 gitignore），不要写进代码或镜像
-- 每个服务自己的 README 只写该服务的环境变量，示例用占位符
+- 每个服务的 README 写该服务的环境变量和工具，示例用占位符
 
 ## 本地开发
 
