@@ -6,6 +6,7 @@ from quarksave.exceptions import TaskError
 from quarksave.tasks import (
     apply_update,
     build_task,
+    name_from_share,
     parse_sse,
     require_savepath,
     summarize_share,
@@ -29,6 +30,18 @@ def test_build_task_normalizes_share_and_path() -> None:
     assert task["pattern"] == ".*"
     assert task["runweek"] == [1, 7]
     assert task["addition"]["auto_unarchive"]["enable"] is True
+
+
+def test_name_from_share_uses_title_and_strips_path_chars() -> None:
+    name = name_from_share(
+        {"share": {"title": " 电影/名:字 "}},
+        "https://pan.quark.cn/s/abc",
+    )
+    assert name == "电影 名 字"
+
+
+def test_name_from_share_falls_back_to_share_id() -> None:
+    assert name_from_share({"list": []}, "https://pan.quark.cn/s/abc?pwd=1") == "abc"
 
 
 def test_build_task_rejects_root_and_non_quark_links() -> None:

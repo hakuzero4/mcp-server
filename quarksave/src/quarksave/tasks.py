@@ -8,6 +8,8 @@ from typing import Any
 from quarksave.exceptions import TaskError
 
 _SHARE_MARK = "pan.quark.cn/s/"
+_SHARE_ID = re.compile(r"pan\.quark\.cn/s/([^/?#]+)")
+_UNSAFE_NAME = re.compile(r'[\\/:*?"<>|\x00-\x1f]+')
 _ENDDATE = re.compile(r"\d{4}-\d{2}-\d{2}")
 _TASK_FIELDS = (
     "taskname",
@@ -22,6 +24,30 @@ _TASK_FIELDS = (
     "shareurl_ban",
 )
 _LOG_LIMIT = 20_000
+
+
+def share_id(shareurl: str) -> str:
+    match = _SHARE_ID.search(shareurl)
+    return match.group(1) if match else "分享"
+
+
+def clean_name(value: str, *, fallback: str) -> str:
+    cleaned = _UNSAFE_NAME.sub(" ", value).strip(" .")
+    cleaned = re.sub(r"\s+", " ", cleaned)
+    if len(cleaned) > 80:
+        cleaned = cleaned[:80].rstrip()
+    return cleaned or fallback
+
+
+def name_from_share(detail: dict[str, Any], shareurl: str) -> str:
+    """Pick a folder name from a share preview."""
+    share = detail.get("share") if isinstance(detail.get("share"), dict) else {}
+    title = share.get("title") or detail.get("title") or ""
+    if not str(title).strip():
+        files = detail.get("list") if isinstance(detail.get("list"), list) else []
+        if len(files) == 1 and isinstance(files[0], dict):
+            title = files[0].get("file_name") or ""
+    return clean_name(str(title), fallback=share_id(shareurl))
 
 
 def require_taskname(value: str) -> str:

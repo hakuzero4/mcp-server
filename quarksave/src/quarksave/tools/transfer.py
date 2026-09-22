@@ -14,9 +14,11 @@ from quarksave.tasks import (
     apply_update,
     build_task,
     find_task,
+    name_from_share,
     require_limit,
     require_savepath,
     require_shareurl,
+    require_taskname,
     summarize_directory,
     summarize_search_hit,
     summarize_share,
@@ -130,9 +132,9 @@ def register(mcp: FastMCP) -> None:
     @mcp.tool(annotations=WRITE)
     async def save(
         ctx: Context,
-        taskname: str,
         shareurl: str,
-        savepath: str,
+        savepath: str | None = None,
+        taskname: str | None = None,
         subscribe: bool = False,
         pattern: str = ".*",
         replace: str = "",
@@ -142,22 +144,20 @@ def register(mcp: FastMCP) -> None:
         update_subdir: str = "",
         auto_unarchive: bool = False,
     ) -> dict[str, Any]:
-        """Transfer a Quark share into the account.
+        """Transfer a Quark share into the account. A share link is enough.
 
-        Use this when the user asks to 转存 a link.
-        Example: "把 https://pan.quark.cn/s/xxxx 转存到 /video/tv/名称，以后继续追更"
-        → taskname="名称", shareurl="https://pan.quark.cn/s/xxxx",
-          savepath="/video/tv/名称", subscribe=true.
+        Use this when the user says "把这个链接转存到我的夸克".
+        Call quarksave_save(shareurl="https://pan.quark.cn/s/xxxx") and nothing else.
+        The share title becomes the folder name, for example /电影名, and the files
+        are transferred once. The task is not stored.
 
-        subscribe=false runs the transfer once and does not store a task.
-        Use that for a movie or a finished series (完结 / 全集).
-        subscribe=true stores the task for the instance crontab, then runs it once.
-        Use that for a series that is still updating. The task name must be new.
+        Pass savepath only when the user names a directory.
+        Pass subscribe=true only when the user wants 追更. The task name must be new.
 
         Args:
-            taskname: Display name, also used by magic rename variables.
             shareurl: `https://pan.quark.cn/s/xxxx`, optional `?pwd=` and `#/list/share/{fid}`.
-            savepath: Destination directory in Quark. Created if missing.
+            savepath: Destination directory. Omit to use /{share title}.
+            taskname: Display name. Omit to use the share title.
             subscribe: Store the task and keep updating it on the crontab.
             pattern: Filename filter. `.*` saves everything. `$TV_MAGIC` uses a saved magic regex.
             replace: New filename. Empty keeps the original name when pattern is not magic.
@@ -167,6 +167,13 @@ def register(mcp: FastMCP) -> None:
             update_subdir: Regex of subfolders to follow inside the share.
             auto_unarchive: Unpack zip/rar/7z after saving and remove the archive.
         """
+        if not taskname or not savepath:
+            detail = await call(qas(ctx).share_detail(checked(require_shareurl, shareurl)))
+            derived = checked(name_from_share, detail, shareurl)
+            taskname = taskname or derived
+            savepath = savepath or f"/{derived}"
+        taskname = checked(require_taskname, taskname)
+        savepath = checked(require_savepath, savepath)
         task = checked(
             build_task,
             taskname=taskname,
@@ -310,12 +317,11 @@ def register(mcp: FastMCP) -> None:
         return await call(qas(ctx).public_state())
 
     @mcp.prompt
-    def save_share_guide(taskname: str, shareurl: str, savepath: str, subscribe: bool) -> str:
-        """Guide for transferring one Quark share through quark-auto-save."""
-        mode = "subscribe=true, then the crontab keeps updating it" if subscribe else "subscribe=false, one transfer and no stored task"
+    def save_share_guide(shareurl: str) -> str:
+        """Guide for transferring one Quark share when the user only sends a link."""
         return (
-            f"Transfer `{shareurl}` to `{savepath}` as `{taskname}` ({mode}).\n\n"
-            "Call `quarksave_get_share` first when the folder layout is unknown.\n"
-            "Call `quarksave_save` with that taskname, shareurl, and savepath.\n"
+            f"Transfer `{shareurl}` into the user's Quark drive.\n\n"
+            "Call `quarksave_save` with only that shareurl.\n"
+            "The tool names the folder from the share title and transfers the files once.\n"
             "Read the returned log for lines starting with 转存文件 or a failure mark."
         )

@@ -55,6 +55,25 @@ async def test_unnamespaced_server_keeps_original_tool_names(qas_client: AsyncMo
     assert f"{NAMESPACE}_save" not in names
 
 
+async def test_save_link_only_uses_share_title(server, qas_client: AsyncMock) -> None:
+    qas_client.share_detail.return_value = {"share": {"title": "电影/名"}}
+
+    async with Client(server) as client:
+        result = await client.call_tool(
+            f"{NAMESPACE}_save",
+            {"shareurl": "https://pan.quark.cn/s/abc"},
+        )
+    payload = tool_payload(result)
+    assert payload["taskname"] == "电影 名"
+    assert payload["savepath"] == "/电影 名"
+    assert payload["subscribed"] is False
+    qas_client.share_detail.assert_awaited()
+    qas_client.add_task.assert_not_awaited()
+    sent = qas_client.run_tasks.await_args.args[0][0]
+    assert sent["savepath"] == "/电影 名"
+    assert sent["pattern"] == ".*"
+
+
 async def test_save_once_does_not_store_the_task(server, qas_client: AsyncMock) -> None:
     async with Client(server) as client:
         result = await client.call_tool(
@@ -70,6 +89,7 @@ async def test_save_once_does_not_store_the_task(server, qas_client: AsyncMock) 
     assert payload["log"] == "转存文件: a.mp4"
     qas_client.add_task.assert_not_awaited()
     qas_client.tasklist.assert_not_awaited()
+    qas_client.share_detail.assert_not_awaited()
     sent = qas_client.run_tasks.await_args.args[0][0]
     assert sent["shareurl"] == "https://pan.quark.cn/s/abc"
     assert sent["savepath"] == "/video/tv/名称"
