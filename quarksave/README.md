@@ -7,7 +7,8 @@ FastMCP 服务，调用 [quark-auto-save](https://github.com/Cp0204/quark-auto-s
 | 变量 | 说明 |
 | --- | --- |
 | `QAS_URL` | WebUI 地址，缺省 `http://127.0.0.1:5005`。也认 `QAS_BASE_URL` |
-| `QAS_TOKEN` | 系统配置 → API 里的 Token。请求放在 `?token=` |
+| `QAS_USERNAME` | WebUI 登录用户名 |
+| `QAS_PASSWORD` | WebUI 登录密码 |
 | `QAS_TIMEOUT` | 普通请求超时秒数，缺省 60 |
 | `QAS_RUN_TIMEOUT` | 一次转存的超时秒数，缺省 900 |
 

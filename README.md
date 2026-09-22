@@ -100,7 +100,8 @@ docker run --rm -i \
   -e NPM_EMAIL= \
   -e NPM_PASSWORD= \
   -e QAS_URL=http://127.0.0.1:5005 \
-  -e QAS_TOKEN= \
+  -e QAS_USERNAME= \
+  -e QAS_PASSWORD= \
   ghcr.io/hakuzero4/mcp-server
 ```
 

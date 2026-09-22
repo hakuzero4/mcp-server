@@ -23,9 +23,14 @@ class Settings(BaseSettings):
         validation_alias=AliasChoices("url", "base_url"),
         description="quark-auto-save WebUI address, for example http://127.0.0.1:5005.",
     )
-    token: str = Field(
+    username: str = Field(
         default="",
-        description="API token from the WebUI 系统配置 → API page. Sent as the token query parameter.",
+        validation_alias=AliasChoices("username", "user"),
+        description="WebUI login name, the same account used at /login.",
+    )
+    password: str = Field(
+        default="",
+        description="WebUI login password.",
     )
     timeout: float = Field(default=60.0, description="HTTP timeout in seconds for ordinary API calls.")
     run_timeout: float = Field(
@@ -41,7 +46,7 @@ class Settings(BaseSettings):
             raise ValueError("QAS URL is empty")
         return cleaned
 
-    @field_validator("token")
+    @field_validator("username", "password")
     @classmethod
-    def strip_token(cls, value: str) -> str:
+    def strip_credential(cls, value: str) -> str:
         return value.strip()

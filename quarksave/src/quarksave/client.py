@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import hashlib
 from typing import Any
 
 import httpx
@@ -9,6 +10,15 @@ import httpx
 from quarksave.exceptions import QasApiError
 from quarksave.settings import Settings
 from quarksave.tasks import parse_sse, summarize_task, trim_log
+
+
+def api_token(username: str, password: str) -> str:
+    """Build the query token quark-auto-save derives from the WebUI login.
+
+    The WebUI uses ``md5("token" + username + password + "+-*/")[8:24]``.
+    """
+    raw = f"token{username}{password}+-*/".encode()
+    return hashlib.md5(raw).hexdigest()[8:24]
 
 
 def _error_message(body: Any) -> str:
@@ -24,10 +34,9 @@ def _error_message(body: Any) -> str:
 
 
 class QasClient:
-    """Token-authenticated client for quark-auto-save.
+    """Client for quark-auto-save, signed in with the WebUI username and password.
 
-    The WebUI expects the API token as a `token` query parameter. Cookie,
-    notify config, and the API token itself are never returned to callers.
+    Cookie, notify config, and the derived API token are never returned to callers.
     """
 
     def __init__(
@@ -37,7 +46,11 @@ class QasClient:
         http: httpx.AsyncClient | None = None,
     ) -> None:
         self.settings = settings or Settings()
-        self._token = self.settings.token
+        self._username = self.settings.username
+        self._password = self.settings.password
+        self._token = (
+            api_token(self._username, self._password) if self._username and self._password else ""
+        )
         self._owned_http = http is None
         self._http = http or httpx.AsyncClient(
             base_url=self.settings.url,
@@ -50,8 +63,9 @@ class QasClient:
             await self._http.aclose()
 
     def _redact(self, text: str) -> str:
-        if self._token and self._token in text:
-            return text.replace(self._token, "***")
+        for secret in (self._password, self._token):
+            if secret and secret in text:
+                text = text.replace(secret, "***")
         return text
 
     async def _send(
@@ -63,8 +77,11 @@ class QasClient:
         params: dict[str, Any] | None = None,
         timeout: httpx.Timeout | float | None = None,
     ) -> httpx.Response:
-        if not self._token:
-            raise QasApiError(401, "Missing QAS token. Set QAS_TOKEN.")
+        if not self._username or not self._password:
+            raise QasApiError(
+                401,
+                "Missing QAS username or password. Set QAS_USERNAME and QAS_PASSWORD.",
+            )
         query = {key: value for key, value in (params or {}).items() if value is not None}
         query["token"] = self._token
         try:
@@ -80,7 +97,7 @@ class QasClient:
         if response.is_redirect:
             raise QasApiError(
                 response.status_code,
-                "Quark-auto-save redirected the request. Check QAS_URL and QAS_TOKEN.",
+                "Quark-auto-save redirected the request. Check QAS_URL, QAS_USERNAME, and QAS_PASSWORD.",
             )
         return response
 
@@ -89,7 +106,7 @@ class QasClient:
         if "text/html" in content_type:
             raise QasApiError(
                 response.status_code,
-                "Quark-auto-save returned HTML. Check QAS_URL and QAS_TOKEN.",
+                "Quark-auto-save returned HTML. Check QAS_URL, QAS_USERNAME, and QAS_PASSWORD.",
             )
         if not response.content:
             if response.is_error:
