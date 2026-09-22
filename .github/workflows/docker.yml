@@ -25,8 +25,8 @@ jobs:
           python-version: "3.12"
       - name: Install and test
         run: |
-          uv sync --package nginxproxy --group dev
-          uv run --package nginxproxy pytest nginxproxy/tests tests -q
+          uv sync --all-packages
+          uv run pytest -q
 
   docker:
     needs: test

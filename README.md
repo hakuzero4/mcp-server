@@ -9,6 +9,7 @@
 | 目录 | Namespace | 说明 |
 | --- | --- | --- |
 | [`nginxproxy/`](nginxproxy/) | `nginxproxy` | [Nginx Proxy Manager](https://nginxproxymanager.com) API |
+| [`quarksave/`](quarksave/) | `quarksave` | [quark-auto-save](https://github.com/Cp0204/quark-auto-save) 夸克转存 |
 
 ## 添加一个新的 MCP 服务
 
@@ -56,7 +57,7 @@
 
 ```bash
 uv sync --all-packages
-uv run --package nginxproxy pytest nginxproxy/tests
+uv run pytest
 uv run python run.py --list
 uv run python run.py all
 ```
@@ -98,12 +99,14 @@ docker run --rm -i \
   -e NPM_URL=http://127.0.0.1:81 \
   -e NPM_EMAIL= \
   -e NPM_PASSWORD= \
+  -e QAS_URL=http://127.0.0.1:5005 \
+  -e QAS_TOKEN= \
   ghcr.io/hakuzero4/mcp-server
 ```
 
 ## `MCP_SERVER`：一个入口，按名字路由
 
-FastMCP 可以在**同一个进程**里挂载多个子服务。客户端只连 `http://<host>:8000/mcp`，工具名用 namespace 区分：`nginxproxy_create_service`、`my-service_...`。
+FastMCP 可以在**同一个进程**里挂载多个子服务。客户端只连 `http://<host>:8000/mcp`，工具名用 namespace 区分：`nginxproxy_create_service`、`quarksave_save`。
 
 | `MCP_SERVER` | 行为 |
 | --- | --- |
