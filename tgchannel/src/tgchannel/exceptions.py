@@ -15,3 +15,7 @@ class TgApiError(TgError):
 
 class RefError(TgError):
     """A channel reference or tool argument is invalid."""
+
+
+class ArchiveError(TgError):
+    """The local channel archive rejected the request or the database file."""

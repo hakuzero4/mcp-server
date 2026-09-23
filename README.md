@@ -10,7 +10,7 @@
 | --- | --- | --- |
 | [`nginxproxy/`](nginxproxy/) | `nginxproxy` | [Nginx Proxy Manager](https://nginxproxymanager.com) API |
 | [`quarksave/`](quarksave/) | `quarksave` | [quark-auto-save](https://github.com/Cp0204/quark-auto-save) 夸克转存 |
-| [`tgchannel/`](tgchannel/) | `tgchannel` | Telegram 公共频道和公开群，只读 |
+| [`tgchannel/`](tgchannel/) | `tgchannel` | Telegram 公共频道和公开群。频道只读，帖子可存入本地库 |
 
 工具名、参数和资源见各服务的 README：[nginxproxy](nginxproxy/README.md)、[quarksave](quarksave/README.md)、[tgchannel](tgchannel/README.md)。
 
@@ -23,6 +23,8 @@
 | 帮我创建一个服务 `10.0.0.10` 的 `8080` 端口，启用自定义证书，域名为 `app.home.com` | `nginxproxy_create_service` |
 | 把 `https://pan.quark.cn/s/xxxx` 转存到我的夸克 | `quarksave_save`，只传 `shareurl` |
 | 看看 `https://t.me/telegram` 最近发了什么 | `tgchannel_list_messages`，只传 `channel` |
+| 把 `https://t.me/telegram` 最近的帖子存下来 | `tgchannel_save_messages`，只传频道链接 |
+| 把 `https://t.me/telegram/123` 这条存下来 | `tgchannel_save_messages`，只传这条帖子链接 |
 
 ## 添加一个新的 MCP 服务
 
@@ -93,6 +95,8 @@ docker compose pull
 docker compose up -d
 ```
 
+频道存档在卷 `./data:/data`（容器内 `TG_STORE_PATH=/data/tgchannel.sqlite`）。Linux 宿主机上 `./data` 需要 uid 1000 可写。更新已有容器时用 `docker compose pull` 然后 `docker compose up -d --force-recreate`，卷会留下来。
+
 MCP 地址：`http://<host>:8000/mcp`。镜像来自 `ghcr.io/hakuzero4/mcp-server:latest`。
 
 拉镜像若出现 `download failed ... EOF`，等 Actions 编完后再 `docker compose pull`。本地已有镜像时 Compose 不会每次重拉。
@@ -118,12 +122,14 @@ docker run --rm -i \
   -e TG_API_ID= \
   -e TG_API_HASH= \
   -e TG_SESSION= \
+  -e TG_STORE_PATH=/data/tgchannel.sqlite \
+  -v mcp-data:/data \
   ghcr.io/hakuzero4/mcp-server
 ```
 
 ## `MCP_SERVER`：一个入口，按名字路由
 
-FastMCP 可以在**同一个进程**里挂载多个子服务。客户端只连 `http://<host>:8000/mcp`，工具名用 namespace 区分：`nginxproxy_create_service`、`quarksave_save`、`tgchannel_list_messages`。
+FastMCP 可以在**同一个进程**里挂载多个子服务。客户端只连 `http://<host>:8000/mcp`，工具名用 namespace 区分：`nginxproxy_create_service`、`quarksave_save`、`tgchannel_list_messages`、`tgchannel_save_messages`。
 
 | `MCP_SERVER` | 行为 |
 | --- | --- |

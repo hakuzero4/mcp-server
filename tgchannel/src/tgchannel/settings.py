@@ -32,6 +32,10 @@ class Settings(BaseSettings):
         gt=0,
         description="Seconds allowed for one Telegram tool call, including connect.",
     )
+    store_path: str = Field(
+        default="",
+        description="SQLite file for saved channel posts. Empty disables only the archive tools.",
+    )
 
     @field_validator("api_id", mode="before")
     @classmethod
@@ -40,7 +44,7 @@ class Settings(BaseSettings):
             return 0
         return value
 
-    @field_validator("api_hash", "session")
+    @field_validator("api_hash", "session", "store_path")
     @classmethod
     def strip_secret(cls, value: str) -> str:
         return value.strip()

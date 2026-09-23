@@ -19,6 +19,12 @@ htmlcov/
 .env.local
 *.pem
 
+# Local agent database
+data/
+*.sqlite
+*.sqlite-wal
+*.sqlite-shm
+
 # OS / editor
 .DS_Store
 Thumbs.db

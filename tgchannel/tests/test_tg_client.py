@@ -223,6 +223,16 @@ async def test_list_messages_stops_at_the_limit() -> None:
     assert telegram.iter_messages.call_args.kwargs["limit"] == 2
 
 
+async def test_get_messages_reports_ids_that_are_missing() -> None:
+    telegram = fake_telegram(channel())
+    telegram.get_messages = AsyncMock(return_value=[post("hello", 7), None])
+    client = TgClient(settings(), telegram=telegram)
+    payload = await client.get_messages("https://t.me/telegram", [7, 9])
+    assert [item["id"] for item in payload["messages"]] == [7]
+    assert payload["missing"] == ["telegram:9"]
+    assert telegram.get_messages.await_args.kwargs["ids"] == [7, 9]
+
+
 async def test_search_passes_query_and_offset() -> None:
     telegram = fake_telegram(channel(), [post("hello", 8)])
     client = TgClient(settings(), telegram=telegram)

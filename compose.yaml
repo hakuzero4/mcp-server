@@ -7,6 +7,9 @@ services:
       - "8000:8000"
     env_file:
       - .env
+    volumes:
+      - ./data:/data
     environment:
       MCP_SERVER: ${MCP_SERVER:-all}
       MCP_TRANSPORT: ${MCP_TRANSPORT:-http}
+      TG_STORE_PATH: /data/tgchannel.sqlite

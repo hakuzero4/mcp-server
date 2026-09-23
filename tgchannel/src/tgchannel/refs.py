@@ -28,6 +28,14 @@ _PRIVATE = (
 DEFAULT_LIMIT = 20
 MAX_LIMIT = 100
 MAX_QUERY = 200
+MAX_ROW_OFFSET = 1_000
+_MAX_MESSAGE_ID = 10**18
+_SAVED_KEY = re.compile(r"^([A-Za-z][A-Za-z0-9_]{4,31}):(\d+)$")
+_MESSAGE_LINK = re.compile(
+    r"^https?://(?:www\.)?(?:t\.me|telegram\.me)/"
+    r"([A-Za-z][A-Za-z0-9_]{4,31})/(\d+)/?(?:\?[^#]*)?(?:#.*)?$",
+    re.IGNORECASE,
+)
 
 
 def parse_channel_ref(raw: str) -> str:
@@ -58,6 +66,63 @@ def require_offset(offset_id: int) -> int:
     if isinstance(offset_id, bool) or not isinstance(offset_id, int) or offset_id < 0:
         raise RefError("offset_id must be an integer greater than or equal to 0.")
     return offset_id
+
+
+def save_targets(
+    channel: str | None,
+    messages: list[str] | None,
+) -> list[tuple[str, int]] | None:
+    """Return specific posts to save, or None to save the channel's recent page.
+
+    A message link or `telegram:7` is one post. A channel link or @username is the
+    recent page. When `messages` is set, only those posts are saved.
+    """
+    refs: list[str] = []
+    if messages is not None:
+        if not isinstance(messages, list) or len(messages) > MAX_LIMIT:
+            raise RefError("messages must contain 1 to 100 post links or keys.")
+        if not messages and channel is None:
+            raise RefError("Pass a channel link, or post links such as https://t.me/telegram/7.")
+        refs.extend(messages)
+    if isinstance(channel, str) and (_SAVED_KEY.fullmatch(channel.strip()) or _MESSAGE_LINK.fullmatch(channel.strip())):
+        refs.append(channel)
+    if not refs:
+        if not isinstance(channel, str) or not channel.strip():
+            raise RefError("Pass a channel link, or post links such as https://t.me/telegram/7.")
+        return None
+    seen: set[tuple[str, int]] = set()
+    ordered: list[tuple[str, int]] = []
+    for raw in refs:
+        if not isinstance(raw, str):
+            raise RefError("Each post must be a t.me link or a key like telegram:7.")
+        try:
+            item = parse_saved_message(raw)
+        except RefError as exc:
+            raise RefError("Each post must be a t.me link or a key like telegram:7.") from exc
+        if item not in seen:
+            seen.add(item)
+            ordered.append(item)
+    return ordered
+
+
+def parse_saved_message(raw: str) -> tuple[str, int]:
+    """Return `(username, message_id)` from `telegram:7` or a t.me message link."""
+    if not isinstance(raw, str):
+        raise RefError("Use a saved key like telegram:7 or a t.me message link.")
+    match = _SAVED_KEY.fullmatch(raw.strip()) or _MESSAGE_LINK.fullmatch(raw.strip())
+    if match is None:
+        raise RefError("Use a saved key like telegram:7 or a t.me message link.")
+    message_id = int(match.group(2))
+    if message_id < 1 or message_id > _MAX_MESSAGE_ID:
+        raise RefError("Use a saved key like telegram:7 or a t.me message link.")
+    return match.group(1).lower(), message_id
+
+
+def require_row_offset(offset: int) -> int:
+    """Reject saved-archive offsets outside 0..1000. Booleans are not offsets."""
+    if isinstance(offset, bool) or not isinstance(offset, int) or offset < 0 or offset > MAX_ROW_OFFSET:
+        raise RefError("offset must be an integer from 0 to 1000.")
+    return offset
 
 
 def require_query(query: str) -> str:

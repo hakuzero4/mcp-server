@@ -37,6 +37,7 @@ async def test_gateway_all_keeps_namespace() -> None:
     assert any(tool.name == "nginxproxy_list_proxy_hosts" for tool in tools)
     assert any(tool.name == "quarksave_save" for tool in tools)
     assert any(tool.name == "tgchannel_list_messages" for tool in tools)
+    assert any(tool.name == "tgchannel_save_messages" for tool in tools)
 
 
 async def test_single_server_matches_namespaced_tools() -> None:

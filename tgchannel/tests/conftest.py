@@ -4,6 +4,7 @@ from unittest.mock import AsyncMock
 
 import pytest
 
+from tgchannel.archive import Archive
 from tgchannel.server import create_server
 
 
@@ -19,4 +20,4 @@ def tg_client() -> AsyncMock:
 
 @pytest.fixture
 def server(tg_client: AsyncMock):
-    return create_server(namespaced=True, client=tg_client)
+    return create_server(namespaced=True, client=tg_client, archive=Archive(""))

@@ -22,8 +22,8 @@ from telethon.errors import (
 from telethon.sessions import StringSession
 from telethon.tl.functions.channels import GetFullChannelRequest
 
-from tgchannel.exceptions import TgApiError, TgConfigError, TgError
-from tgchannel.refs import parse_channel_ref, require_limit, require_offset, require_query
+from tgchannel.exceptions import RefError, TgApiError, TgConfigError, TgError
+from tgchannel.refs import MAX_LIMIT, parse_channel_ref, require_limit, require_offset, require_query
 from tgchannel.settings import Settings
 from tgchannel.summarize import summarize_channel, summarize_message
 
@@ -76,6 +76,15 @@ class TgClient:
                 query=None,
             )
         )
+
+    async def get_messages(self, channel: str, message_ids: list[int]) -> dict[str, Any]:
+        """Fetch specific posts by id. Missing ids are listed, not treated as an error."""
+        if not isinstance(message_ids, list) or not message_ids or len(message_ids) > MAX_LIMIT:
+            raise RefError("messages must contain 1 to 100 posts.")
+        for message_id in message_ids:
+            if isinstance(message_id, bool) or not isinstance(message_id, int) or message_id < 1:
+                raise RefError("Message id must be a positive integer.")
+        return await self._bounded(self._by_ids(channel, message_ids))
 
     async def search_messages(
         self,
@@ -147,6 +156,37 @@ class TgClient:
             "kind": _channel_kind(entity),
             "messages": items,
         }
+
+    async def _by_ids(self, channel: str, message_ids: list[int]) -> dict[str, Any]:
+        telegram, entity, username = await self._resolve(channel)
+        try:
+            found = await telegram.get_messages(entity, ids=list(message_ids))
+        except (RPCError, ValueError, OSError) as exc:
+            raise self._map(exc, username) from exc
+        if found is None:
+            found_list: list[Any] = []
+        elif isinstance(found, list):
+            found_list = found
+        else:
+            found_list = [found]
+        by_id: dict[int, dict[str, Any]] = {}
+        for message in found_list:
+            if message is None:
+                continue
+            message_id = getattr(message, "id", None)
+            if isinstance(message_id, bool) or not isinstance(message_id, int):
+                continue
+            by_id[message_id] = summarize_message(message, username=username)
+        name = username.lower()
+        items: list[dict[str, Any]] = []
+        missing: list[str] = []
+        for message_id in message_ids:
+            item = by_id.get(message_id)
+            if item is None:
+                missing.append(f"{name}:{message_id}")
+                continue
+            items.append(item)
+        return {"username": username, "messages": items, "missing": missing}
 
     async def _resolve(self, channel: str) -> tuple[Any, Any, str]:
         username = parse_channel_ref(channel)
