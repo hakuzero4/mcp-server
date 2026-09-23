@@ -10,8 +10,9 @@
 | --- | --- | --- |
 | [`nginxproxy/`](nginxproxy/) | `nginxproxy` | [Nginx Proxy Manager](https://nginxproxymanager.com) API |
 | [`quarksave/`](quarksave/) | `quarksave` | [quark-auto-save](https://github.com/Cp0204/quark-auto-save) 夸克转存 |
+| [`tgchannel/`](tgchannel/) | `tgchannel` | Telegram 公共频道和公开群，只读 |
 
-工具名、参数和资源见各服务的 README：[nginxproxy](nginxproxy/README.md)、[quarksave](quarksave/README.md)。
+工具名、参数和资源见各服务的 README：[nginxproxy](nginxproxy/README.md)、[quarksave](quarksave/README.md)、[tgchannel](tgchannel/README.md)。
 
 ## 给 Agent
 
@@ -21,6 +22,7 @@
 | --- | --- |
 | 帮我创建一个服务 `10.0.0.10` 的 `8080` 端口，启用自定义证书，域名为 `app.home.com` | `nginxproxy_create_service` |
 | 把 `https://pan.quark.cn/s/xxxx` 转存到我的夸克 | `quarksave_save`，只传 `shareurl` |
+| 看看 `https://t.me/telegram` 最近发了什么 | `tgchannel_list_messages`，只传 `channel` |
 
 ## 添加一个新的 MCP 服务
 
@@ -113,12 +115,15 @@ docker run --rm -i \
   -e QAS_URL=http://127.0.0.1:5005 \
   -e QAS_USERNAME= \
   -e QAS_PASSWORD= \
+  -e TG_API_ID= \
+  -e TG_API_HASH= \
+  -e TG_SESSION= \
   ghcr.io/hakuzero4/mcp-server
 ```
 
 ## `MCP_SERVER`：一个入口，按名字路由
 
-FastMCP 可以在**同一个进程**里挂载多个子服务。客户端只连 `http://<host>:8000/mcp`，工具名用 namespace 区分：`nginxproxy_create_service`、`quarksave_save`。
+FastMCP 可以在**同一个进程**里挂载多个子服务。客户端只连 `http://<host>:8000/mcp`，工具名用 namespace 区分：`nginxproxy_create_service`、`quarksave_save`、`tgchannel_list_messages`。
 
 | `MCP_SERVER` | 行为 |
 | --- | --- |

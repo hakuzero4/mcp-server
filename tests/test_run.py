@@ -17,6 +17,7 @@ def test_discover_includes_workspace_servers() -> None:
     servers = discover_servers()
     assert servers["nginxproxy"] == "nginxproxy.server"
     assert servers["quarksave"] == "quarksave.server"
+    assert servers["tgchannel"] == "tgchannel.server"
 
 
 def test_parse_all_and_subset() -> None:
@@ -29,12 +30,13 @@ def test_parse_all_and_subset() -> None:
 async def test_gateway_all_keeps_namespace() -> None:
     servers = discover_servers()
     mcp, names = build_app(ALL, servers)
-    assert names == ["nginxproxy", "quarksave"]
+    assert names == ["nginxproxy", "quarksave", "tgchannel"]
     async with Client(mcp) as client:
         tools = await client.list_tools()
     assert any(tool.name == "nginxproxy_create_service" for tool in tools)
     assert any(tool.name == "nginxproxy_list_proxy_hosts" for tool in tools)
     assert any(tool.name == "quarksave_save" for tool in tools)
+    assert any(tool.name == "tgchannel_list_messages" for tool in tools)
 
 
 async def test_single_server_matches_namespaced_tools() -> None:

@@ -1,0 +1,28 @@
+[project]
+name = "tgchannel"
+version = "0.1.0"
+description = "FastMCP server that reads public Telegram channels for a signed-in user account"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "fastmcp>=4.0.0",
+    "pydantic-settings>=2.0",
+    "telethon>=1.36,<2",
+]
+
+[project.scripts]
+tgchannel = "tgchannel.server:main"
+
+[build-system]
+requires = ["uv_build>=0.8.8,<0.9.0"]
+build-backend = "uv_build"
+
+[dependency-groups]
+dev = [
+    "pytest>=8",
+    "pytest-asyncio>=0.24",
+]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]

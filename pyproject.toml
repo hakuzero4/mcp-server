@@ -9,8 +9,9 @@ dependencies = []
 members = [
     "nginxproxy",
     "quarksave",
+    "tgchannel",
 ]
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
-testpaths = ["nginxproxy/tests", "quarksave/tests", "tests"]
+testpaths = ["nginxproxy/tests", "quarksave/tests", "tgchannel/tests", "tests"]
